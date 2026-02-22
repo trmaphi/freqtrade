@@ -5,6 +5,9 @@ outputs:
   BRANCH_NAME:
     description: 'The branch name'
     value: ${{ steps.tags.outputs.BRANCH_NAME }}
+  COMMIT_SHA:
+    description: 'The full commit SHA'
+    value: ${{ steps.tags.outputs.COMMIT_SHA }}
   TAG:
     description: 'The Docker tag'
     value: ${{ steps.tags.outputs.TAG }}
@@ -41,12 +44,14 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Extract branch name
+    - name: Extract branch name and commit hash
       shell: bash
       id: tags
       env:
         BRANCH_NAME_INPUT: ${{ github.event.inputs.branch_name }}
         EVENT_NAME: ${{ github.event_name }}
+        REF_TYPE: ${{ github.ref_type }}
+        REF_NAME: ${{ github.ref_name }}
       run: |
         if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
           BRANCH_NAME="${BRANCH_NAME_INPUT}"
@@ -54,8 +59,13 @@ runs:
           BRANCH_NAME="${GITHUB_REF##*/}"
         fi
 
-        # Replace / with _ to create a valid tag
-        TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
+        # Use git tag if available, otherwise fall back to short commit hash
+        COMMIT_SHA="${GITHUB_SHA}"
+        if [ "${REF_TYPE}" = "tag" ]; then
+          TAG="${REF_NAME}"
+        else
+          TAG="${COMMIT_SHA:0:7}"
+        fi
         TAG_PLOT=${TAG}_plot
         TAG_FREQAI=${TAG}_freqai
         TAG_FREQAI_RL=${TAG_FREQAI}rl
@@ -71,6 +81,7 @@ runs:
         CACHE_TAG_PI=${CACHE_IMAGE}:${TAG_PI}_cache
 
         echo "BRANCH_NAME=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
+        echo "COMMIT_SHA=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
         echo "TAG=${TAG}" >> "$GITHUB_OUTPUT"
         echo "TAG_PLOT=${TAG_PLOT}" >> "$GITHUB_OUTPUT"
         echo "TAG_FREQAI=${TAG_FREQAI}" >> "$GITHUB_OUTPUT"

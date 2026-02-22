@@ -24,3 +24,7 @@ user_data/
 .vscode
 .mypy_cache
 .ipynb_checkpoints
+
+# Ignore ccxt folder except ccxt/python
+ccxt/*
+!ccxt/python

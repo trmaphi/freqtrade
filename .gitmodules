@@ -1,0 +1,4 @@
+[submodule "ccxt"]
+	path = ccxt
+	url = https://github.com/trmaphi/ccxt.git
+	branch = v4.5.34

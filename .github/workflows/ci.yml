@@ -24,13 +24,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ "ubuntu-22.04", "ubuntu-24.04", "macos-14", "macos-15" , "windows-2022", "windows-2025" ]
+        os: [ "ubuntu-24.04" ]
         python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
+        submodules: recursive
 
     - name: Set up Python
       uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
@@ -166,13 +167,24 @@ jobs:
         Invoke-Pester -Path "tests" -CI
         if ($Error.Length -gt 0) {exit 1}
 
-    - name: Discord notification
-      uses: rjstone/discord-webhook-notify@c2597273488aeda841dd1e891321952b51f7996f #v2.2.1
+    - name: Telegram notification
       if: ${{ failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
-      with:
-          severity: error
-          details: Freqtrade CI failed on ${{ matrix.os }} with Python ${{ matrix.python-version }}!
-          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+      env:
+        BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        REPO: ${{ github.repository }}
+        BRANCH: ${{ github.ref_name }}
+        COMMIT: ${{ github.sha }}
+        MATRIX_OS: ${{ matrix.os }}
+        MATRIX_PYTHON: ${{ matrix.python-version }}
+      run: |
+        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+          -d chat_id="${CHAT_ID}" \
+          -d text="❌ Freqtrade CI failed on ${MATRIX_OS} with Python ${MATRIX_PYTHON}!
+        Repository: ${REPO}
+        Branch: ${BRANCH}
+        Commit: ${COMMIT}" \
+          -d parse_mode="HTML"
 
   mypy-version-check:
     name: "Mypy Version Check"
@@ -181,6 +193,7 @@ jobs:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
+        submodules: recursive
 
     - name: Set up Python
       uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 #v6.1.0
@@ -199,6 +212,7 @@ jobs:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
+        submodules: recursive
 
     - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
       with:
@@ -212,6 +226,7 @@ jobs:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
+        submodules: recursive
 
     - name: Documentation syntax
       run: |
@@ -227,13 +242,22 @@ jobs:
         pip install -r docs/requirements-docs.txt
         mkdocs build
 
-    - name: Discord notification
-      uses: rjstone/discord-webhook-notify@c2597273488aeda841dd1e891321952b51f7996f #v2.2.1
+    - name: Telegram notification
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
-      with:
-          severity: error
-          details: Freqtrade doc test failed!
-          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+      env:
+        BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        REPO: ${{ github.repository }}
+        BRANCH: ${{ github.ref_name }}
+        COMMIT: ${{ github.sha }}
+      run: |
+        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+          -d chat_id="${CHAT_ID}" \
+          -d text="❌ Freqtrade doc test failed!
+        Repository: ${REPO}
+        Branch: ${BRANCH}
+        Commit: ${COMMIT}" \
+          -d parse_mode="HTML"
 
 
   build-linux-online:
@@ -244,6 +268,7 @@ jobs:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
+        submodules: recursive
 
     - name: Set up Python
       uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
@@ -282,7 +307,7 @@ jobs:
     ]
     runs-on: ubuntu-22.04
     # Discord notification can't handle schedule events
-    if: github.event_name != 'schedule' && github.repository == 'freqtrade/freqtrade'
+    if: github.event_name != 'schedule' && github.repository == 'trmaphi/freqtrade'
     steps:
 
     - name: Check user permission
@@ -294,13 +319,22 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Discord notification
-      uses: rjstone/discord-webhook-notify@c2597273488aeda841dd1e891321952b51f7996f #v2.2.1
+    - name: Telegram notification
       if: steps.check.outputs.permitted == 'true' && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
-      with:
-          severity: info
-          details: Test Completed!
-          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+      env:
+        BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        REPO: ${{ github.repository }}
+        BRANCH: ${{ github.ref_name }}
+        COMMIT: ${{ github.sha }}
+      run: |
+        curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+          -d chat_id="${CHAT_ID}" \
+          -d text="✅ Test Completed!
+        Repository: ${REPO}
+        Branch: ${BRANCH}
+        Commit: ${COMMIT}" \
+          -d parse_mode="HTML"
 
   build:
     if: always()
@@ -323,6 +357,7 @@ jobs:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
+        submodules: recursive
 
     - name: Set up Python
       uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
@@ -355,60 +390,60 @@ jobs:
           ft_client/dist
         retention-days: 10
 
-  deploy-test-pypi:
-    name: "Publish Python 🐍 distribution 📦 to TestPyPI"
-    needs: [ build ]
-    runs-on: ubuntu-22.04
-    if: (github.event_name == 'release')
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/freqtrade
-    permissions:
-      id-token: write # Needed for pypa/gh-action-pypi-publish
+  # deploy-test-pypi:
+  #   name: "Publish Python 🐍 distribution 📦 to TestPyPI"
+  #   needs: [ build ]
+  #   runs-on: ubuntu-22.04
+  #   if: (github.event_name == 'release')
+  #   environment:
+  #     name: testpypi
+  #     url: https://test.pypi.org/p/freqtrade
+  #   permissions:
+  #     id-token: write # Needed for pypa/gh-action-pypi-publish
 
-    steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      with:
-        persist-credentials: false
+  #   steps:
+  #   - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+  #     with:
+  #       persist-credentials: false
 
-    - name: Download artifact  📦
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
-      with:
-        pattern: freqtrade*-build
-        path: dist
-        merge-multiple: true
+  #   - name: Download artifact  📦
+  #     uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+  #     with:
+  #       pattern: freqtrade*-build
+  #       path: dist
+  #       merge-multiple: true
 
-    - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
-      with:
-        repository-url: https://test.pypi.org/legacy/
+  #   - name: Publish to PyPI (Test)
+  #     uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+  #     with:
+  #       repository-url: https://test.pypi.org/legacy/
 
 
-  deploy-pypi:
-    name: "Publish Python 🐍 distribution 📦 to PyPI"
-    needs: [ build ]
-    runs-on: ubuntu-22.04
-    if: (github.event_name == 'release')
-    environment:
-      name: pypi
-      url: https://pypi.org/p/freqtrade
-    permissions:
-      id-token: write # Needed for pypa/gh-action-pypi-publish
+  # deploy-pypi:
+  #   name: "Publish Python 🐍 distribution 📦 to PyPI"
+  #   needs: [ build ]
+  #   runs-on: ubuntu-22.04
+  #   if: (github.event_name == 'release')
+  #   environment:
+  #     name: pypi
+  #     url: https://pypi.org/p/freqtrade
+  #   permissions:
+  #     id-token: write # Needed for pypa/gh-action-pypi-publish
 
-    steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      with:
-        persist-credentials: false
+  #   steps:
+  #   - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+  #     with:
+  #       persist-credentials: false
 
-    - name: Download artifact  📦
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
-      with:
-        pattern: freqtrade*-build
-        path: dist
-        merge-multiple: true
+  #   - name: Download artifact  📦
+  #     uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+  #     with:
+  #       pattern: freqtrade*-build
+  #       path: dist
+  #       merge-multiple: true
 
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+  #   - name: Publish to PyPI
+  #     uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
 
 
   docker-build:
@@ -416,7 +451,7 @@ jobs:
     needs: [
      build,
     ]
-    if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
+    if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'trmaphi/freqtrade'
     uses: ./.github/workflows/docker-build.yml
     permissions:
       packages: write # Needed to push package versions
@@ -424,15 +459,16 @@ jobs:
     secrets:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
 
-  packages-cleanup:
-    name: "Docker Package Cleanup"
-    uses: ./.github/workflows/packages-cleanup.yml
-    # Only run on push, schedule, or release events
-    if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'freqtrade/freqtrade'
-    permissions:
-      packages: write # Needed to delete package versions
-    with:
-      package_name: 'freqtrade'
+  # packages-cleanup:
+  #   name: "Docker Package Cleanup"
+  #   uses: ./.github/workflows/packages-cleanup.yml
+  #   # Only run on push, schedule, or release events
+  #   if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'trmaphi/freqtrade'
+  #   permissions:
+  #     packages: write # Needed to delete package versions
+  #   with:
+  #     package_name: 'freqtrade'

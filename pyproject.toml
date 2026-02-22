@@ -30,46 +30,49 @@ classifiers = [
 
 dependencies = [
   # from requirements.txt
-  "ccxt>=4.5.4",
-  "SQLAlchemy>=2.0.6",
-  "python-telegram-bot>=20.1",
-  "humanize>=4.0.0",
-  "cachetools",
-  "requests",
+  "numpy==2.4.1",
+  "pandas==2.3.3",
+  "bottleneck==1.6.0",
+  "numexpr==2.14.1",
+  "ft-pandas-ta==0.3.16",
+  "ta-lib==0.6.8",
+  "technical==1.5.4",
+  "ccxt",
+  "cryptography==46.0.5",
+  "aiohttp==3.13.3",
+  "SQLAlchemy==2.0.45",
+  "python-telegram-bot==22.5",
   "httpx>=0.24.1",
-  "urllib3",
-  "jsonschema",
-  "numpy>2.0,<3.0",
-  "pandas>=2.2.0,<3.0",
-  "TA-Lib<0.7",
-  "ft-pandas-ta",
-  "technical",
-  "tabulate",
-  "pycoingecko>=3.2.0",
-  "python-rapidjson",
-  "orjson",
-  "jinja2",
-  "questionary",
-  "prompt-toolkit",
-  "joblib>=1.2.0",
-  "rich",
-  'pyarrow; platform_machine != "armv7l"',
-  "fastapi",
-  "pydantic>=2.2.0",
-  "pyjwt",
-  "websockets",
-  "uvicorn",
-  "psutil",
-  "schedule",
-  "janus",
-  "ast-comments",
-  "aiofiles",
-  "aiohttp",
-  "cryptography",
-  "sdnotify",
-  "python-dateutil",
-  "pytz",
-  "packaging",
+  "humanize==4.15.0",
+  "cachetools==6.2.4",
+  "requests==2.32.5",
+  "urllib3==2.6.3",
+  "certifi==2026.1.4",
+  "jsonschema==4.26.0",
+  "tabulate==0.9.0",
+  "pycoingecko==3.2.0",
+  "jinja2==3.1.6",
+  "joblib==1.5.3",
+  "rich==14.2.0",
+  "pyarrow==23.0.0; platform_machine != 'armv7l'",
+  "python-rapidjson==1.23",
+  "orjson==3.11.5",
+  "sdnotify==0.3.2",
+  "fastapi==0.128.0",
+  "pydantic==2.12.5",
+  "uvicorn==0.40.0",
+  "pyjwt==2.10.1",
+  "aiofiles==25.1.0",
+  "psutil==7.2.1",
+  "questionary==2.1.1",
+  "prompt-toolkit==3.0.52",
+  "python-dateutil==2.9.0.post0",
+  "pytz==2025.2",
+  "schedule==1.2.2",
+  "websockets==16.0",
+  "janus==2.0.0",
+  "ast-comments==1.2.3",
+  "packaging==25.0",
   "freqtrade-client",
 ]
 
@@ -99,24 +102,25 @@ freqai_rl = [
   "tqdm",
 ]
 develop = [
-  "isort",
-  "mypy",
-  "pre-commit",
-  "pytest-asyncio",
-  "pytest-cov",
-  "pytest-mock",
-  "pytest-random-order",
-  "pytest-timeout",
-  "pytest-xdist",
-  "pytest",
-  "ruff",
-  "scipy-stubs",
-  "time-machine",
-  "types-cachetools",
-  "types-filelock",
-  "types-python-dateutil",
-  "types-requests",
-  "types-tabulate",
+  "isort==7.0.0",
+  "mypy==1.19.1",
+  "pip-audit==2.10.0",
+  "pre-commit==4.5.1",
+  "pytest-asyncio==1.3.0",
+  "pytest-cov==7.0.0",
+  "pytest-mock==3.15.1",
+  "pytest-random-order==1.2.0",
+  "pytest-timeout==2.4.0",
+  "pytest-xdist==3.8.0",
+  "pytest==9.0.2",
+  "ruff==0.15.0",
+  "scipy-stubs==1.17.0.2",
+  "time-machine==3.2.0",
+  "types-cachetools==6.2.0.20251022",
+  "types-filelock==3.2.7",
+  "types-python-dateutil==2.9.0.20260124",
+  "types-requests==2.32.4.20260107",
+  "types-tabulate==0.9.0.20241207",
 ]
 jupyter = [
   "jupyter",
@@ -153,6 +157,9 @@ namespaces = true
 [tool.setuptools.dynamic]
 version = {attr = "freqtrade.__version__"}
 
+[tool.uv.sources]
+ccxt = { path = "./ccxt/python", editable = true }
+
 [tool.black]
 line-length = 100
 exclude = '''
@@ -179,8 +186,9 @@ line_length = 100
 profile = "black"
 # multi_line_output=3
 lines_after_imports=2
-skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"]
+skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*", "ccxt/**"]
 known_first_party = ["freqtrade_client"]
+known_third_party = ["ccxt"]
 
 [tool.pytest.ini_options]
 # TODO: should be migrated to [tool.pytest] as support for this was added in 9.0
@@ -190,6 +198,7 @@ log_date_format = "%Y-%m-%d %H:%M:%S"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "--dist loadscope"
+norecursedirs = ["ccxt"]
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -198,6 +207,7 @@ warn_unused_ignores = true
 exclude = [
     '^build_helpers\.py$',
     '^ft_client/build/.*$',
+    '^ccxt/.*$',
 ]
 plugins = [
   "sqlalchemy.ext.mypy.plugin"
@@ -214,6 +224,14 @@ module = [
 ]
 # Disable attr-defined check due to ta-lib not having type stubs
 disable_error_code = "attr-defined"
+
+[[tool.mypy.overrides]]
+module = [
+  "freqtrade.util.ft_precise",
+  "freqtrade.exchange.*"
+]
+# Disable attr-defined and name-defined checks due to ccxt not having complete type stubs
+disable_error_code = ["attr-defined", "name-defined"]
 
 [tool.pyright]
 include = ["freqtrade", "ft_client"]
@@ -251,7 +269,7 @@ reportTypedDictNotRequiredAccess = false  # 27
 
 [tool.ruff]
 line-length = 100
-extend-exclude = [".env", ".venv"]
+extend-exclude = [".env", ".venv", "ccxt"]
 
 [tool.ruff.lint]
 extend-select = [
@@ -325,6 +343,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
 [tool.ruff.lint.isort]
 lines-after-imports = 2
 known-first-party = ["freqtrade_client"]
+known-third-party = ["ccxt"]
 
 [tool.flake8]
 # Default from https://flake8.pycqa.org/en/latest/user/options.html#cmdoption-flake8-ignore
@@ -339,6 +358,9 @@ exclude = [
     "user_data",
     ".venv",
     ".env",
+]
+per-file-ignores = [
+    "freqtrade/optimize/hyperopt/hyperopt_optimizer.py: F821",
 ]
 
 [tool.codespell]
